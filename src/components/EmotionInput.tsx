@@ -2,10 +2,16 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Mic, MicOff, Trash2, Timer } from "lucide-react";
+import { Mic, MicOff, Trash2, Timer, Loader } from "lucide-react";
 import { startSpeechRecognition, stopSpeechRecognition } from "@/lib/speech";
+import ComfortMessage from "./ComfortMessage";
 
 const TIMER_OPTIONS = [0, 5, 10, 30, 60]; // 초 단위
+
+interface ComfortData {
+  emotion: string;
+  message: string;
+}
 
 export default function EmotionInput() {
   const [text, setText] = useState("");
@@ -13,16 +19,16 @@ export default function EmotionInput() {
   const [selectedTimer, setSelectedTimer] = useState(10);
   const [remaining, setRemaining] = useState<number | null>(null);
   const [isBurning, setIsBurning] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [comfortData, setComfortData] = useState<ComfortData | null>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
   // 타이머 카운트다운
   useEffect(() => {
     if (remaining === null) return;
     if (remaining <= 0) {
-      // 실제 삭제 시점
-      setText("");
-      setIsBurning(false);
-      setRemaining(null);
+      // 실제 삭제 시점 + AI 위로 받기
+      handleComfort();
       return;
     }
     const id = setTimeout(() => {
@@ -49,14 +55,44 @@ export default function EmotionInput() {
     stopSpeechRecognition();
   };
 
+  // AI 위로 메시지 받기
+  const handleComfort = async () => {
+    if (!text.trim()) {
+      setText("");
+      setIsBurning(false);
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const res = await fetch("/api/comfort", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text }),
+      });
+
+      if (res.ok) {
+        const data: ComfortData = await res.json();
+        setComfortData(data);
+      }
+    } catch (error) {
+      console.error("위로 메시지 받기 실패:", error);
+    } finally {
+      setIsLoading(false);
+      // 텍스트 삭제
+      setText("");
+      setIsBurning(false);
+      setRemaining(null);
+    }
+  };
+
   const handleTrash = () => {
     if (!text.trim()) return;
     // 타이머 0이면 즉시 삭제
     if (selectedTimer === 0) {
       setIsBurning(true);
       setTimeout(() => {
-        setText("");
-        setIsBurning(false);
+        handleComfort();
       }, 1200); // 애니메이션 시간
       return;
     }
@@ -65,24 +101,47 @@ export default function EmotionInput() {
     setRemaining(selectedTimer);
   };
 
-  const disabled = !text.trim() || remaining !== null;
+  const disabled = !text.trim() || remaining !== null || isLoading;
 
   return (
     <div className="space-y-4">
+      {/* 위로 메시지 모달 */}
+      {comfortData && (
+        <ComfortMessage
+          message={comfortData.message}
+          emotion={comfortData.emotion}
+          onComplete={() => setComfortData(null)}
+        />
+      )}
+
+      {/* 텍스트 입력 영역 */}
       <div className="relative">
         <textarea
-          className={`w-full min-h-[160px] resize-none rounded-2xl bg-black/30 border border-white/10 px-4 py-3 text-sm outline-none focus:border-emotionAccent/70 focus:ring-2 focus:ring-emotionAccent/40 transition-all
-            ${isBurning ? "animate-pulse" : ""}`}
+          className={`w-full min-h-[160px] resize-none rounded-2xl bg-black/30 border border-white/10 px-4 py-3 text-sm outline-none focus:border-emotionAccent/70 focus:ring-2 focus:ring-emotionAccent/40 transition-all placeholder-slate-400
+            ${isBurning ? "animate-burn" : ""}
+            ${isLoading ? "opacity-50" : ""}`}
           placeholder="아무 말이나 다 해도 괜찮아요. 여기서 사라집니다..."
           value={text}
           onChange={(e) => setText(e.target.value)}
+          disabled={isLoading}
         />
         {isBurning && (
-          <div className="pointer-events-none absolute inset-0 rounded-2xl bg-gradient-to-b from-orange-500/10 via-red-600/10 to-black/60 mix-blend-screen" />
+          <div className="pointer-events-none absolute inset-0 rounded-2xl bg-gradient-to-b from-orange-500/20 via-red-600/20 to-black/60 mix-blend-screen" />
+        )}
+
+        {/* 로딩 표시 */}
+        {isLoading && (
+          <div className="pointer-events-none absolute inset-0 rounded-2xl flex items-center justify-center">
+            <div className="flex flex-col items-center gap-2">
+              <Loader className="w-5 h-5 text-emotionAccent animate-spin" />
+              <span className="text-xs text-emotionAccent">위로를 준비 중...</span>
+            </div>
+          </div>
         )}
       </div>
 
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      {/* 타이머 선택 & 음성 버튼 */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between flex-wrap">
         {/* 타이머 선택 */}
         <div className="flex flex-wrap items-center gap-2 text-xs text-slate-300">
           <Timer className="w-4 h-4 flex-shrink-0" />
@@ -93,11 +152,12 @@ export default function EmotionInput() {
                 key={sec}
                 type="button"
                 onClick={() => setSelectedTimer(sec)}
+                disabled={disabled}
                 className={`px-2 py-1 rounded-full border text-[11px] transition ${
                   selectedTimer === sec
                     ? "border-emotionAccent bg-emotionAccent/20"
                     : "border-white/10 hover:border-emotionAccent/60"
-                }`}
+                } ${disabled ? "opacity-50" : ""}`}
               >
                 {sec === 0 ? "즉시" : `${sec}s`}
               </button>
@@ -109,11 +169,12 @@ export default function EmotionInput() {
         <button
           type="button"
           onClick={isSpeaking ? handleStopSpeech : handleStartSpeech}
+          disabled={disabled}
           className={`inline-flex items-center gap-1 rounded-full border px-3 py-1 text-xs transition whitespace-nowrap ${
             isSpeaking
               ? "border-red-500 bg-red-500/20 text-red-200"
               : "border-white/10 hover:border-emotionAccent/60"
-          }`}
+          } ${disabled ? "opacity-50 cursor-not-allowed" : ""}`}
         >
           {isSpeaking ? (
             <>
@@ -129,7 +190,7 @@ export default function EmotionInput() {
         </button>
       </div>
 
-      {/* 버리기 버튼 & 상태 */}
+      {/* 버리기 버튼 & 상태 표시 */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <button
           type="button"
@@ -139,16 +200,29 @@ export default function EmotionInput() {
             ${
               disabled
                 ? "bg-slate-700/60 text-slate-400 cursor-not-allowed"
-                : "bg-emotionAccent/90 hover:bg-emotionAccent text-white"
+                : "bg-emotionAccent/90 hover:bg-emotionAccent text-white hover:shadow-lg hover:shadow-emotionAccent/50"
             }`}
         >
-          <Trash2 className="w-4 h-4" />
-          감정 버리기
+          {isLoading ? (
+            <>
+              <Loader className="w-4 h-4 animate-spin" />
+              처리 중...
+            </>
+          ) : (
+            <>
+              <Trash2 className="w-4 h-4" />
+              감정 버리기
+            </>
+          )}
         </button>
 
         <div className="text-xs text-slate-400 text-center sm:text-right">
-          {remaining !== null ? (
-            <span className="font-semibold text-emotionAccent">
+          {isLoading ? (
+            <span className="text-emotionAccent font-semibold">
+              ✨ 당신을 위한 위로를 준비 중...
+            </span>
+          ) : remaining !== null ? (
+            <span className="font-semibold text-emotionAccent animate-countdownPulse">
               🔥 폭파까지 {remaining}초 남음...
             </span>
           ) : isBurning ? (
@@ -157,6 +231,11 @@ export default function EmotionInput() {
             <span>기록, 로그, 저장 없이 바로 사라집니다.</span>
           )}
         </div>
+      </div>
+
+      {/* 문자 수 표시 */}
+      <div className="text-xs text-slate-500 text-right">
+        {text.length} / 500자
       </div>
     </div>
   );

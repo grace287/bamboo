@@ -32,11 +32,156 @@ body {
   background: rgba(168, 85, 247, 0.8);
 }
 
-/* 부드러운 애니메이션 */
-@keyframes fadeInUp {
+/* ===== 페이드 인/아웃 애니메이션 ===== */
+@keyframes fadeIn {
   from {
     opacity: 0;
-    transform: translateY(10px);
+    transform: scale(0.95) translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes fadeOut {
+  from {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: scale(0.95) translateY(20px);
+  }
+}
+
+/* ===== 폭파/버닝 애니메이션 ===== */
+@keyframes burn {
+  0% {
+    opacity: 1;
+    transform: scale(1) rotate(0deg);
+    filter: brightness(1);
+  }
+  25% {
+    transform: scale(1.05) rotate(2deg);
+    filter: brightness(1.2) hue-rotate(10deg);
+  }
+  50% {
+    opacity: 0.7;
+    transform: scale(0.98) rotate(-2deg);
+    filter: brightness(1.4) hue-rotate(30deg);
+  }
+  75% {
+    opacity: 0.3;
+    transform: scale(0.95) rotate(5deg);
+    filter: brightness(1.6) hue-rotate(60deg);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(0.8) rotate(-5deg);
+    filter: brightness(2) hue-rotate(80deg);
+  }
+}
+
+/* ===== 파동 애니메이션 ===== */
+@keyframes wave {
+  0%,
+  100% {
+    transform: translateY(0px);
+  }
+  25% {
+    transform: translateY(-15px);
+  }
+  50% {
+    transform: translateY(0px);
+  }
+  75% {
+    transform: translateY(-10px);
+  }
+}
+
+/* ===== 부드러운 부유 애니메이션 ===== */
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+/* ===== 스파클/반짝이 애니메이션 ===== */
+@keyframes sparkle {
+  0% {
+    opacity: 0;
+    transform: scale(0) translateY(20px);
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1) translateY(-20px);
+  }
+}
+
+/* ===== 종이 구기는 애니메이션 ===== */
+@keyframes crumple {
+  0% {
+    transform: scaleX(1) scaleY(1);
+  }
+  25% {
+    transform: scaleX(0.95) scaleY(1.05);
+  }
+  50% {
+    transform: scaleX(0.9) scaleY(1.1);
+  }
+  75% {
+    transform: scaleX(0.85) scaleY(1.15);
+  }
+  100% {
+    transform: scaleX(0) scaleY(0);
+  }
+}
+
+/* ===== 흔들림 애니메이션 ===== */
+@keyframes shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  10%,
+  30%,
+  50%,
+  70%,
+  90% {
+    transform: translateX(-5px);
+  }
+  20%,
+  40%,
+  60%,
+  80% {
+    transform: translateX(5px);
+  }
+}
+
+/* ===== 글로우 펄스 애니메이션 ===== */
+@keyframes glowPulse {
+  0%,
+  100% {
+    box-shadow: 0 0 20px rgba(168, 85, 247, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 40px rgba(168, 85, 247, 0.6);
+  }
+}
+
+/* ===== 텍스트 슬라이드 애니메이션 ===== */
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
   }
   to {
     opacity: 1;
@@ -44,29 +189,90 @@ body {
   }
 }
 
-/* 폭파 애니메이션 */
-@keyframes burn {
+/* ===== 타이머 카운트다운 애니메이션 ===== */
+@keyframes countdownPulse {
   0% {
-    opacity: 1;
     transform: scale(1);
   }
   50% {
-    opacity: 0.8;
+    transform: scale(1.1);
   }
   100% {
-    opacity: 0;
-    transform: scale(0.95);
+    transform: scale(1);
   }
 }
 
-/* 파동 애니메이션 */
-@keyframes wave {
-  0%,
-  100% {
-    transform: translateY(0);
+/* ===== 폭죽 파티클 ===== */
+@keyframes burst {
+  0% {
+    opacity: 1;
+    transform: translate(0, 0) scale(1);
   }
-  50% {
-    transform: translateY(-10px);
+  100% {
+    opacity: 0;
+    transform: translate(var(--tx), var(--ty)) scale(0);
   }
 }
+
+/* ===== 별 떨어지는 애니메이션 ===== */
+@keyframes starFall {
+  0% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(300px) scale(0);
+  }
+}
+
+/* Tailwind 커스텀 클래스 */
+.animate-fadeIn {
+  animation: fadeIn 0.6s ease-out;
+}
+
+.animate-fadeOut {
+  animation: fadeOut 0.6s ease-in forwards;
+}
+
+.animate-burn {
+  animation: burn 1.5s ease-in-out;
+}
+
+.animate-wave {
+  animation: wave 0.8s ease-in-out;
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+.animate-sparkle {
+  animation: sparkle 2s ease-out infinite;
+}
+
+.animate-crumple {
+  animation: crumple 1.2s ease-in forwards;
+}
+
+.animate-shake {
+  animation: shake 0.5s ease-in-out;
+}
+
+.animate-glowPulse {
+  animation: glowPulse 2s ease-in-out infinite;
+}
+
+.animate-slideUp {
+  animation: slideUp 0.8s ease-out;
+}
+
+.animate-countdownPulse {
+  animation: countdownPulse 0.6s ease-in-out;
+}
+
+.animate-starFall {
+  animation: starFall 2s ease-in;
+}
+
 
